@@ -12,6 +12,8 @@ services:
       - ./voices:/app/voices
       - ./output:/app/output
       - ./models:/root/.local/share/tts
+      - ./core:/app/core
+      - ./server.py:/app/server.py
     # Caso possua placa de vídeo NVIDIA dedicada no host, descomente o bloco deploy abaixo:
     # deploy:
     #   resources:

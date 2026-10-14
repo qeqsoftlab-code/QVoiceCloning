@@ -39,15 +39,22 @@ class SynthesizeRequest(BaseModel):
     text: str = Field(..., description="Texto a sintetizar")
     voice_name: str = Field(default="default", description="Nome do ficheiro em /voices sem a extensão .wav")
     language: str = Field(default="pt", description="Código do idioma (pt para Português)")
-    temperature: Optional[float] = Field(default=0.82, description="Modulação de pitch e expressividade")
-    repetition_penalty: Optional[float] = Field(default=2.0, description="Penalidade de repetição para evitar monotonia rítmica")
+    temperature: Optional[float] = Field(default=0.75, description="Modulação de pitch e expressividade")
+    repetition_penalty: Optional[float] = Field(default=5.0, description="Penalidade de repetição para evitar repetição/loops")
     top_p: Optional[float] = Field(default=0.85, description="Filtro top_p de amostragem de tokens")
     length_penalty: Optional[float] = Field(default=1.0, description="Penalidade de extensão")
 
 @app.on_event("startup")
 def startup_event():
     # Inicializa o modelo no arranque da API
-    QVoiceSynthesizer.get_instance()
+    engine = QVoiceSynthesizer.get_instance()
+    # Pré-carrega e persiste os latentes de todas as vozes da pasta voices/
+    for wav_file in VOICES_DIR.glob("*.wav"):
+        try:
+            print(f"[QVoiceCloning] A pré-aquecer latentes da voz '{wav_file.stem}'...")
+            engine.get_speaker_latents(str(wav_file))
+        except Exception as e:
+            print(f"[QVoiceCloning] Aviso: erro ao pré-aquecer {wav_file.name}: {e}")
 
 @app.get("/health")
 def health_check():
