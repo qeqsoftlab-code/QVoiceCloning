@@ -105,6 +105,8 @@ class QVoiceSynthesizer:
         temperature: float = 0.75,
         repetition_penalty: float = 5.0,
         top_p: float = 0.85,
+        top_k: int = 30,
+        speed: float = 1.0,
         length_penalty: float = 1.0,
     ) -> str:
         if not os.path.exists(speaker_wav):
@@ -132,6 +134,8 @@ class QVoiceSynthesizer:
                     length_penalty=length_penalty,
                     repetition_penalty=repetition_penalty,
                     top_p=top_p,
+                    top_k=top_k,
+                    speed=speed,
                     enable_text_splitting=False,
                 )
                 wav_chunk = out["wav"]

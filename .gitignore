@@ -18,6 +18,7 @@ output/*
 !output/.gitkeep
 output_*.wav
 test_output.wav
+*.log
 
 # IDE e Sistema Operacional
 .vscode/

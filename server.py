@@ -3,7 +3,7 @@ import re
 import uuid
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel, Field
 from core.synthesizer import QVoiceSynthesizer
 
@@ -15,6 +15,10 @@ OUTPUT_DIR = BASE_DIR / "output"
 
 VOICES_DIR.mkdir(exist_ok=True)
 OUTPUT_DIR.mkdir(exist_ok=True)
+
+@app.get("/")
+def root():
+    return RedirectResponse(url="/docs")
 
 def sanitize_tts_input(text: str) -> str:
     cleaned = text.replace('\r\n', ' ').replace('\n', ' ')
@@ -42,6 +46,7 @@ class SynthesizeRequest(BaseModel):
     temperature: Optional[float] = Field(default=0.75, description="Modulação de pitch e expressividade")
     repetition_penalty: Optional[float] = Field(default=5.0, description="Penalidade de repetição para evitar repetição/loops")
     top_p: Optional[float] = Field(default=0.85, description="Filtro top_p de amostragem de tokens")
+    speed: Optional[float] = Field(default=1.0, description="Velocidade da fala (ex: 1.0 ou 1.05 para ritmo mais ágil)")
     length_penalty: Optional[float] = Field(default=1.0, description="Penalidade de extensão")
 
 @app.on_event("startup")
@@ -90,9 +95,10 @@ def synthesize(req: SynthesizeRequest):
             speaker_wav=str(voice_path),
             output_path=str(out_file),
             language=req.language,
-            temperature=req.temperature if req.temperature is not None else 0.82,
-            repetition_penalty=req.repetition_penalty if req.repetition_penalty is not None else 2.0,
+            temperature=req.temperature if req.temperature is not None else 0.75,
+            repetition_penalty=req.repetition_penalty if req.repetition_penalty is not None else 5.0,
             top_p=req.top_p if req.top_p is not None else 0.85,
+            speed=req.speed if req.speed is not None else 1.0,
             length_penalty=req.length_penalty if req.length_penalty is not None else 1.0,
         )
         return FileResponse(
