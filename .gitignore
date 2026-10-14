@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches and virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Cache de modelos (pesos do XTTS-v2 baixados automaticamente no primeiro arranque ~1.8GB)
+models/*
+!models/.gitkeep
+
+# Áudios gerados nas sínteses de teste
+output/*
+!output/.gitkeep
+output_*.wav
+test_output.wav
+
+# IDE e Sistema Operacional
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Variáveis de ambiente
+.env
