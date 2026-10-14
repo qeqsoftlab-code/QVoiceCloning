@@ -5,6 +5,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     COQUI_TOS_AGREED=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
     python3 \
     python3-pip \
     python3-dev \
