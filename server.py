@@ -5,7 +5,8 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel, Field
-from core.synthesizer import QVoiceSynthesizer
+import threading
+from typing import Optional
 
 app = FastAPI(title="QVoiceCloning API", version="1.0.0")
 
@@ -55,27 +56,42 @@ class SynthesizeRequest(BaseModel):
     speed: Optional[float] = Field(default=1.0, description="Velocidade da fala (ex: 1.0 ou 1.05 para ritmo mais ágil)")
     length_penalty: Optional[float] = Field(default=1.0, description="Penalidade de extensão")
 
+_engine = None
+_engine_lock = threading.Lock()
+
+def get_engine():
+    global _engine
+    if _engine is None:
+        with _engine_lock:
+            if _engine is None:
+                from core.synthesizer import QVoiceSynthesizer
+                _engine = QVoiceSynthesizer.get_instance()
+    return _engine
+
+def _warmup_background():
+    try:
+        engine = get_engine()
+        for wav_file in VOICES_DIR.glob("*.wav"):
+            try:
+                print(f"[QVoiceCloning] A pré-aquecer latentes da voz '{wav_file.stem}'...")
+                engine.get_speaker_latents(str(wav_file))
+            except Exception as e:
+                print(f"[QVoiceCloning] Aviso: erro ao pré-aquecer {wav_file.name}: {e}")
+        print("[+] QVoiceCloning: modelo pronto e aquecido em memória!")
+    except Exception as e:
+        print(f"[!] Erro no aquecimento do modelo em background: {e}")
+
 @app.on_event("startup")
 def startup_event():
-    # Inicializa o modelo no arranque da API
-    engine = QVoiceSynthesizer.get_instance()
-    # Pré-carrega e persiste os latentes de todas as vozes da pasta voices/
-    for wav_file in VOICES_DIR.glob("*.wav"):
-        try:
-            print(f"[QVoiceCloning] A pré-aquecer latentes da voz '{wav_file.stem}'...")
-            engine.get_speaker_latents(str(wav_file))
-        except Exception as e:
-            print(f"[QVoiceCloning] Aviso: erro ao pré-aquecer {wav_file.name}: {e}")
+    # Inicia o aquecimento do modelo em background sem travar a abertura imediata da porta 8001
+    threading.Thread(target=_warmup_background, daemon=True, name="model-warmup").start()
 
 @app.get("/health")
 def health_check():
-    import torch
     return {
         "status": "online",
         "service": "QVoiceCloning",
-        "cuda_available": torch.cuda.is_available(),
-        "device": "cuda" if torch.cuda.is_available() else "cpu",
-        "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "N/A"
+        "model_loaded": _engine is not None
     }
 
 @app.get("/voices")
@@ -95,7 +111,7 @@ def synthesize(req: SynthesizeRequest):
     out_file = OUTPUT_DIR / f"voice_{uuid.uuid4().hex[:8]}.wav"
     try:
         sanitized_text = sanitize_tts_input(req.text)
-        engine = QVoiceSynthesizer.get_instance()
+        engine = get_engine()
         engine.synthesize(
             text=sanitized_text,
             speaker_wav=str(voice_path),
