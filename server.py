@@ -21,21 +21,26 @@ def root():
     return RedirectResponse(url="/docs")
 
 def sanitize_tts_input(text: str) -> str:
-    cleaned = text.replace('\r\n', ' ').replace('\n', ' ')
-    cleaned = cleaned.replace(':', ',')
-    # Remove qualquer injeção acidental da palavra literal
-    cleaned = re.sub(r'\b(ponto final|ponto)\b\.?', '', cleaned, flags=re.IGNORECASE)
+    if not text:
+        return ""
+    # 1. Expansão de siglas literárias e conhecidas
+    text = re.sub(r"J\.?\s*R\.?\s*R\.?", "Jota Érre Érre", text, flags=re.IGNORECASE)
+    text = re.sub(r"([A-Z])\.(?=[A-Z]\.?)", r" ", text)
     
-    # Solução para o bug do tokenizador pt do XTTS:
-    # Substitui pontos finais declarativos por vírgula e espaço ou reticências leves
-    # para gerar a pausa sintática exata sem engatilhar a leitura do vocábulo "ponto"
-    cleaned = re.sub(r'\s*\.\s*', ', ', cleaned)
-    cleaned = re.sub(r'\s*,\s*', ', ', cleaned)
-    cleaned = re.sub(r',\s*,+', ', ', cleaned)
-    cleaned = re.sub(r'\s+([,!?;])', r'\1', cleaned)
-    cleaned = re.sub(r'\s+', ' ', cleaned)
-    cleaned = re.sub(r'[,\s]+$', '', cleaned)
-    return cleaned.strip()
+    # 2. Higienização fonética fina: evita tensão no 's' final em palavras terminadas em s/as/os antes de pontuação
+    text = re.sub(r"([a-zA-ZÀ-ÿ]+[sS])\s*[.,;!?:-]+\s*", r" ", text)
+    # Demais pontuações normais com ponto final
+    text = re.sub(r"([a-zA-ZÀ-ÿ])\.\s*", r", ", text)
+    
+    # 3. Limpeza de resíduos de pontuação e espaços
+    text = text.replace(":", ",")
+    text = re.sub(r"(ponto final|ponto)\.?", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s*,\s*", ", ", text)
+    text = re.sub(r",\s*,+", ", ", text)
+    text = re.sub(r"\s+([,!?;])", r"", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
 
 from typing import Optional
 
