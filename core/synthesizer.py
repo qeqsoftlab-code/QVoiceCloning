@@ -103,9 +103,9 @@ class QVoiceSynthesizer:
         output_path: str,
         language: str = "pt",
         temperature: float = 0.75,
-        repetition_penalty: float = 5.0,
+        repetition_penalty: float = 1.5,
         top_p: float = 0.85,
-        top_k: int = 30,
+        top_k: int = 50,
         speed: float = 1.0,
         length_penalty: float = 1.0,
     ) -> str:

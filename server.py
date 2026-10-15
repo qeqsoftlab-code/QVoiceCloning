@@ -49,8 +49,9 @@ class SynthesizeRequest(BaseModel):
     voice_name: str = Field(default="default", description="Nome do ficheiro em /voices sem a extensão .wav")
     language: str = Field(default="pt", description="Código do idioma (pt para Português)")
     temperature: Optional[float] = Field(default=0.75, description="Modulação de pitch e expressividade")
-    repetition_penalty: Optional[float] = Field(default=5.0, description="Penalidade de repetição para evitar repetição/loops")
+    repetition_penalty: Optional[float] = Field(default=1.5, description="Penalidade de repetição (1.5 preserva harmônicos naturais)")
     top_p: Optional[float] = Field(default=0.85, description="Filtro top_p de amostragem de tokens")
+    top_k: Optional[int] = Field(default=50, description="Filtro top_k de amostragem acústica (50 para riqueza tímbrica natural)")
     speed: Optional[float] = Field(default=1.0, description="Velocidade da fala (ex: 1.0 ou 1.05 para ritmo mais ágil)")
     length_penalty: Optional[float] = Field(default=1.0, description="Penalidade de extensão")
 
@@ -101,8 +102,9 @@ def synthesize(req: SynthesizeRequest):
             output_path=str(out_file),
             language=req.language,
             temperature=req.temperature if req.temperature is not None else 0.75,
-            repetition_penalty=req.repetition_penalty if req.repetition_penalty is not None else 5.0,
+            repetition_penalty=req.repetition_penalty if req.repetition_penalty is not None else 1.5,
             top_p=req.top_p if req.top_p is not None else 0.85,
+            top_k=req.top_k if req.top_k is not None else 50,
             speed=req.speed if req.speed is not None else 1.0,
             length_penalty=req.length_penalty if req.length_penalty is not None else 1.0,
         )
